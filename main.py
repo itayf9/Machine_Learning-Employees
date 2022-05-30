@@ -111,12 +111,15 @@ class DataPreprocessor(object):
         """
 
         # This section can be hard-coded
+        dataset_df= dataset_df.drop('Season', axis=1)
+        dataset_df = dataset_df.drop('Smoker', axis=1)
+        dataset_df = dataset_df.drop('Month', axis=1)
+        dataset_df = dataset_df.drop('Day', axis=1)
         #numerical_columns = ['Transportation expense', 'Height', ]  # There are more - what else?
         # numerical_columns = ['Reason', 'Education']
         # numerical_columns = ['Transportation expense', 'Residence Distance', 'Service time', 'Weight', 'Height',]
         numerical_columns = ['Transportation expense', 'Residence Distance', 'Service time', 'Weight', 'Height', 'Son', 'Pet']
         categorical_columns = list(set(dataset_df.columns) - set(numerical_columns))
-
 
         # Handling Numerical Fields
         num_pipeline = Pipeline([
@@ -142,6 +145,21 @@ class DataPreprocessor(object):
         ])
 
         self.transformer.fit(dataset_df)
+
+        '''
+TimeOff                   1.000000
+Transportation expense    0.207302
+Reason                    0.206585
+Son                       0.185418
+Day                       0.088751
+Height                    0.075067
+Month                     0.043981
+Season                    0.028800
+Pet                       0.018405
+Service time              0.014663
+Weight                    0.003203
+Residence Distance        0.002672
+        '''
 
     def transform(self, df):
         """
@@ -180,10 +198,10 @@ def train_model(processed_X, y):
     """
     #model = GaussianNB()
     from sklearn.svm import SVC
-    from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+    from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, AdaBoostRegressor, RandomForestRegressor
     from sklearn.multiclass import OneVsRestClassifier
 
-    model = OneVsRestClassifier(estimator=AdaBoostClassifier())
+    model = OneVsRestClassifier(estimator=AdaBoostClassifier(learning_rate=0.6))
 
     model.fit(processed_X, y)
 
@@ -195,10 +213,19 @@ if __name__ == '__main__':
     preprocessor = DataPreprocessor()
     train_csv_path = 'time_off_data_train.csv'
     train_dataset_df = load_dataset(train_csv_path)
-
+    from sklearn.model_selection import train_test_split
+    train_dataset_df, test_dataset_df = train_test_split(train_dataset_df, test_size=0.2, random_state=42)
+    print (train_dataset_df.shape, test_dataset_df.shape)
+    '''
     train_dataset_df = train_dataset_df.drop("ID", axis=1)
     print(train_dataset_df)
-
+    train_dataset_df['TimeOff'].replace('Low', 0, inplace=True)
+    train_dataset_df['TimeOff'].replace('Medium', 1, inplace=True)
+    train_dataset_df['TimeOff'].replace('High', 2, inplace=True)
+    train_dataset_df['TimeOff'].replace('Very High', 3, inplace=True)
+    print(train_dataset_df)
+    print(train_dataset_df.corr()['TimeOff'].abs().sort_values(ascending=False))
+    '''
     X_train = train_dataset_df.iloc[:, :-1]
     y_train = train_dataset_df['TimeOff']
     preprocessor.fit(X_train)
@@ -208,8 +235,8 @@ if __name__ == '__main__':
     ### Evaluation Section ####
     # test_csv_path = 'time_off_data_test.csv'
     # Obviously, this will be different during evaluation. For now, you can keep it to validate proper execution
-    test_csv_path = train_csv_path
-    test_dataset_df = load_dataset(test_csv_path)
+    #test_csv_path = train_csv_path
+    #test_dataset_df = load_dataset(test_csv_path)
 
     X_test = test_dataset_df.iloc[:, :-1]
     y_test = test_dataset_df['TimeOff']
